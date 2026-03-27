@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Operation": {
+      "title": "Operation",
+      "description": "A fund trading operation recorded from a screenshot",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "fundName": { "type": "string" },
+        "fundCode": { "type": "string" },
+        "type": { "type": "string", "enum": ["buy", "sell", "add", "reduce", "switch", "observe"] },
+        "amount": { "type": "number" },
+        "shares": { "type": "number" },
+        "sector": { "type": "string" },
+        "reason": { "type": "string" },
+        "screenshotUrl": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fundName", "type", "createdAt"]
+    },
+    "Recap": {
+      "title": "Recap",
+      "description": "A generated market recap or commentary",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["intraday", "end-of-day", "long-form", "social-post"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "relatedOperations": { "type": "array", "items": { "type": "string" } },
+        "marketContext": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "content", "createdAt"]
+    },
+    "Holding": {
+      "title": "Holding",
+      "description": "Current fund holding",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "fundName": { "type": "string" },
+        "fundCode": { "type": "string" },
+        "amount": { "type": "number" },
+        "shares": { "type": "number" },
+        "costBasis": { "type": "number" },
+        "sector": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "fundName", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/operations/{operationId}": {
+      "schema": "Operation",
+      "description": "Individual fund operations"
+    },
+    "/recaps/{recapId}": {
+      "schema": "Recap",
+      "description": "Generated recaps and commentaries"
+    },
+    "/holdings/{holdingId}": {
+      "schema": "Holding",
+      "description": "Current user holdings"
+    }
+  }
+}

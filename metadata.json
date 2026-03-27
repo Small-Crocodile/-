@@ -1,0 +1,5 @@
+{
+  "name": "FundRecap - 基金操作复盘助手",
+  "description": "基金操作复盘与板块机会助手，自动识别买卖动作，结合资讯生成专业复盘内容。",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string
+    //   - photoURL: string
+    //   - createdAt: timestamp
+    //
+    // Collection: operations
+    // Document ID: operationId
+    // Fields:
+    //   - userId: string (required)
+    //   - date: timestamp
+    //   - fundName: string (required)
+    //   - fundCode: string
+    //   - type: string (required) - buy, sell, add, reduce, switch, observe
+    //   - amount: number
+    //   - shares: number
+    //   - sector: string
+    //   - reason: string
+    //   - screenshotUrl: string
+    //   - createdAt: timestamp
+    //
+    // Collection: recaps
+    // Document ID: recapId
+    // Fields:
+    //   - userId: string (required)
+    //   - date: timestamp
+    //   - type: string (required) - intraday, end-of-day, long-form, social-post
+    //   - title: string
+    //   - content: string (required)
+    //   - relatedOperations: list
+    //   - marketContext: string
+    //   - createdAt: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid is string &&
+             data.email is string;
+    }
+
+    function isValidOperation(data) {
+      return data.keys().hasAll(['userId', 'createdAt']) &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidRecap(data) {
+      return data.keys().hasAll(['userId', 'type', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.type in ['intraday', 'end-of-day', 'long-form', 'social-post'] &&
+             data.content is string && data.content.size() < 50000;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "12345TLT@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.uid == resource.data.uid;
+    }
+
+    match /operations/{operationId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidOperation(request.resource.data);
+      allow update: if isDocOwner() && isValidOperation(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /recaps/{recapId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidRecap(request.resource.data);
+      allow update: if isDocOwner() && isValidRecap(request.resource.data) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /holdings/{holdingId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update: if isDocOwner() && request.resource.data.userId == resource.data.userId;
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}
